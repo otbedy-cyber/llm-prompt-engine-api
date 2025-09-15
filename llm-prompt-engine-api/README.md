@@ -35,4 +35,4 @@
 uvicorn src.main:app --reload
 
 # Запустить весь стек (Prometheus/Grafana/Loki)
-docker-compose up --build
+docker-compose up --build 
