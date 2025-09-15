@@ -1,0 +1,41 @@
+auth_enabled: false
+server:
+  http_listen_port: 3100
+
+common:
+  path_prefix: /loki
+  storage:
+    filesystem:
+      chunks_directory: /tmp/loki/chunks
+      rules_directory: /tmp/loki/rules
+  replication_factor: 1
+  ring:
+    instance_addr: 127.0.0.1
+    kvstore:
+      store: inmemory
+
+schema_config:
+  config:
+    from: 2020-10-24
+    object_store: filesystem
+    storage_backend: filesystem
+    chunk_target_size: 1048576
+
+ruler:
+  alertmanager_url: http://localhost:9093
+
+frontend:
+  compress_responses: true
+
+limits_config:
+  enforce_metric_name: false
+  reject_old_samples: true
+  reject_old_samples_max_age: 168h
+
+chunk_store_config:
+  max_look_back_period: 0s
+
+table_manager:
+  cleanup_interval: 1h
+  index_queries_cache_config:
+    max_receivers: 100
