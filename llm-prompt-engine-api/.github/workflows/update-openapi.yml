@@ -1,0 +1,96 @@
+name: Update OpenAPI Documentation
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  generate-and-deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pages: write
+      id-token: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install uvicorn[standard] pyyaml openapi-spec-validator
+
+      - name: Generate OpenAPI spec
+        run: |
+          python scripts/generate_openapi.py
+
+      - name: Validate OpenAPI YAML
+        run: |
+          python -c "
+import yaml
+from openapi_spec_validator import validate_spec
+with open('openapi.yaml', 'r', encoding='utf-8') as f:
+    spec = yaml.safe_load(f)
+validate_spec(spec)
+print('✅ OpenAPI spec is valid!')
+"
+
+      - name: Setup GitHub Pages
+        uses: actions/configure-pages@v5
+
+      - name: Build Swagger UI
+        run: |
+          mkdir -p docs
+          curl -L https://github.com/swagger-api/swagger-ui/releases/download/v5.17.14/swagger-ui-dist.zip -o swagger-ui.zip
+          unzip swagger-ui.zip -d docs
+          cp openapi.yaml docs/openapi.yaml
+          cat > docs/index.html << 'EOF'
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>LLM Prompt Engine API</title>
+    <link rel="stylesheet" type="text/css" href="./swagger-ui/swagger-ui.css" />
+    <style>
+        body { margin: 0; padding: 0; }
+    </style>
+</head>
+<body>
+    <div id="swagger-ui"></div>
+    <script src="./swagger-ui/swagger-ui-bundle.js"></script>
+    <script src="./swagger-ui/swagger-ui-standalone-preset.js"></script>
+    <script>
+        window.onload = function() {
+            const ui = SwaggerUIBundle({
+                url: './openapi.yaml',
+                dom_id: '#swagger-ui',
+                deepLinking: true,
+                presets: [
+                    SwaggerUIBundle.presets.apis,
+                    SwaggerUIStandalonePreset
+                ],
+                plugins: [
+                    SwaggerUIBundle.plugins.DownloadUrl
+                ],
+                layout: "StandaloneLayout"
+            });
+            window.ui = ui;
+        };
+    </script>
+</body>
+</html>
+EOF
+
+      - name: Upload to GitHub Pages
+        uses: actions/deploy-pages@v4
+        with:
+          folder: docs
