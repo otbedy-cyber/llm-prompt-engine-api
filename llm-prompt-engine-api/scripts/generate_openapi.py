@@ -5,20 +5,28 @@ from fastapi.openapi.utils import get_openapi
 import yaml
 import os
 import sys
-import time
 
-# Добавляем путь к src
+# ⚠️ КРИТИЧНО: Добавляем путь к src — без этого импорт сломается!
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 
 from src.main import app
 
 def generate_openapi():
-    server = uvicorn.Server(uvicorn.Config(app, host="127.0.0.1", port=8000, log_level="critical"))
-    import threading
-    thread = threading.Thread(target=server.run)
-    thread.start()
-    time.sleep(2)
+    # ⚠️ ВАЖНО: Используем uvicorn.run() напрямую — БЕЗ потоков!
+    # И используем host="0.0.0.0" — чтобы сервер был доступен изнутри контейнера
+    config = uvicorn.Config(
+        app,
+        host="0.0.0.0",   # 🟢 Разрешаем входящие соединения
+        port=8000,
+        log_level="critical",
+        reload=False      # 🟢 Не нужно перезагружать в CI
+    )
+    server = uvicorn.Server(config)
 
+    # ⚠️ ВАЖНО: Запускаем сервер как блокирующий процесс — так он гарантированно будет готов
+    server.run()
+
+    # После того как сервер запущен — получаем OpenAPI схему
     openapi_schema = get_openapi(
         title=app.title,
         version=app.version,
