@@ -48,4 +48,4 @@ Hugging Face: Chinese-LLaMA-Alpaca
 LLaMA-Factory на GitHub
 CSDN: 10个高阶LLaMA提示词模板
 ModelScope: Qwen-Chat
-© 2025 — Сделано с ❤️ для AI-инженеров
+© 2025 — Сделано с ❤️ для AI-инженеров 
